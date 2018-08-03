@@ -1,7 +1,4 @@
-# RtmpMindmap
-
-
-## **直播RTMP协议详解与注意事项**
+# **直播RTMP协议简介与注意事项**
 
 ### **1.** **简介**
 
@@ -15,7 +12,7 @@ RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它
 
 **直播基本流程：**
 
-![img](assets/wpsOO4NnC.jpg) 
+![img](./assets/wpsOO4NnC.jpg) 
 
  
 
@@ -259,14 +256,4 @@ RTMP 的Chunk Steam ID是用来区分某一个chunk是属于哪一个message的 
 
 RTMP协议是个比较啰嗦的协议，实现起来也比较复杂，但通信过程过程相对简单。在直播的实际工程应用中，协议上很多地方都没有详细说明，注意了以上提到几点，基本能够保证RTMP音视频的通信正常。以上就是对RTMP协议的简介和一些注意事项，希望能帮到有需要的朋友，另外本文难免有错误或说的不够详细的地方，欢迎指正，一起交流探讨。
 
-
-
------
-
-附：RTMP 协议整理成脑图，比较清晰，包括rtmp 消息类型，rtmp 分块chunking，rtmp分块例子。
-免费脑图工具 [Xmind](http://www.xmindchina.net/) 格式.
-
-![](images/chunking.png)
-![](images/rtmp_chunking_demo.png)
-![](images/message.png)
-
+ 
