@@ -1,6 +1,3 @@
-# RtmpMindmap
-
-
 ## **直播RTMP协议详解与注意事项**
 
 ### **1.** **简介**
@@ -21,7 +18,7 @@ RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它
 
 可以看到RTMP 工作在直播推流和拉流两个位置，主要用作音视频媒体数据的传输，推流主要通过RTMP协议，而拉流还可以通过HLS和Http-FLV两种方式。
 
-### **2. ** **RTMP 握手**
+### 2. **RTMP 握手**
 
 RTMP 握手分为简单握手和复杂握手，现在Adobe公司使用RTMP协议的产品用复杂握手的较多，不做介绍。
 
@@ -195,7 +192,7 @@ RTMP消息分成的Chunk有4种类型，可以通过 chunk basic header的高两
 
 如果第二个message和第一个message的message stream ID 相同，并且第二个message的长度也大于了chunk size，那么该如何拆包？当时查了很多资料，都没有介绍。后来看了一些源码，如 SRS，FFMPEG中的实现，发现第二个message可以拆成Type_1类型一个chunk， message剩余的部分拆成Type_3类型的chunk。FFMPEG中就是这么做的。 
 
-### **3.**2 **RTMP 交互消息**
+### 3.2  **RTMP 交互消息**
 
 推流RTMP消息交互流程：
 
