@@ -22,6 +22,8 @@ RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它
 
 RTMP 握手分为简单握手和复杂握手，现在Adobe公司使用RTMP协议的产品用复杂握手的较多，不做介绍。
 
+* 简单握手
+
 ### **握手包格式：**
 
 ```c++
@@ -132,7 +134,202 @@ RTMP握手的这个过程就是完成了两件事：
 
 是发了一堆随机数据，校验网络状况。
 
+* 复杂握手
+
+### complex handshake C1S1结构
+
+complex handshake将C1S1分为4个部分，它们的顺序(schema)一种可能是：
+
+```
+// c1s1 schema0
+time: 4bytes
+version: 4bytes
+key: 764bytes
+digest: 764bytes
+```
+
+其中，key和digest可能会交换位置，即schema可能是：
+
+```
+// c1s1 schema1
+time: 4bytes
+version: 4bytes
+digest: 764bytes
+key: 764bytes
+```
+
+客户端来决定使用哪种schema，服务器端则需要先尝试按照schema0解析，失败则用schema1解析。如下图所示：
+
+```
+C1 S1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |    time       |    version    |      key       |     digest     |
+ |   (4 bytes)   |    (4 bytes)  |   (764 bytes)  |   (764 bytes)  |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |    time       |    version    |      digest    |       key      |
+ |   (4 bytes)   |    (4 bytes)  |   (764 bytes)  |   (764 bytes)  |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+无论key和digest位置如何，它们的结构是不变的：
+
+```
+// 764bytes key结构
+random-data: (offset)bytes
+key-data: 128bytes
+random-data: (764-offset-128-4)bytes
+offset: 4bytes
+
+// 764bytes digest结构
+offset: 4bytes
+random-data: (offset)bytes
+digest-data: 32bytes
+random-data: (764-4-offset-32)bytes 
+
+ //key 764 bytes
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |  random data  |  public key   |      random data        |     offset    |
+ | (offset bytes)|  (128 bytes)  |(764-offset-128-4 bytes) |   (4 bytes)   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+ //digest 764 bytes
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |  offset   |  random data    |   digest data |        random data        |
+ | (4 bytes) | (offset bytes)  |   (32 bytes)  | (764-4-offset-32 bytes)   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+### complex handshake C2S2结构
+
+C2S2主要是提供对C1S1的验证。结构如下：
+
+```
+// 1536bytes C2S2结构
+random-data: 1504bytes
+digest-data: 32bytes
+
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |    random data    |    signature    |  
+ |   (1504 bytes)    |    (32 bytes)   |  
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+### complex handshake C1S1算法
+
+C1S1中都是包含32字节的digest，而且digest将C1S1分成两部分：
+
+```
+// C1S1被digest分成两部分
+c1s1-part1: n bytes
+digest-data: 32bytes
+c1s1-part2: (1536-n-32)bytes
+
+//C1 S1 digest 
+                1536 bytes
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |    P1    |    digest data   |    P2     |
+ |          |    (32 bytes)    |           |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+在生成C1时，需要用到c1s1-part1和c1s1-part2这两个部分的字节拼接起来的字节，定义为：
+
+```
+c1s1-joined = bytes_join(c1s1-part1, c1s1-part2)
+```
+
+也就是说，把1536字节的c1s1中的32字节的digest拿剪刀剪掉，剩下的头和尾加在一起就是c1s1-joined。
+
+用到的两个常量FPKey和FMSKey：
+
+```
+u_int8_t FMSKey[] = {
+    0x47, 0x65, 0x6e, 0x75, 0x69, 0x6e, 0x65, 0x20,
+    0x41, 0x64, 0x6f, 0x62, 0x65, 0x20, 0x46, 0x6c,
+    0x61, 0x73, 0x68, 0x20, 0x4d, 0x65, 0x64, 0x69,
+    0x61, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72,
+    0x20, 0x30, 0x30, 0x31, // Genuine Adobe Flash Media Server 001
+    0xf0, 0xee, 0xc2, 0x4a, 0x80, 0x68, 0xbe, 0xe8,
+    0x2e, 0x00, 0xd0, 0xd1, 0x02, 0x9e, 0x7e, 0x57,
+    0x6e, 0xec, 0x5d, 0x2d, 0x29, 0x80, 0x6f, 0xab,
+    0x93, 0xb8, 0xe6, 0x36, 0xcf, 0xeb, 0x31, 0xae
+}; // 68
+
+u_int8_t FPKey[] = {
+    0x47, 0x65, 0x6E, 0x75, 0x69, 0x6E, 0x65, 0x20,
+    0x41, 0x64, 0x6F, 0x62, 0x65, 0x20, 0x46, 0x6C,
+    0x61, 0x73, 0x68, 0x20, 0x50, 0x6C, 0x61, 0x79,
+    0x65, 0x72, 0x20, 0x30, 0x30, 0x31, // Genuine Adobe Flash Player 001
+    0xF0, 0xEE, 0xC2, 0x4A, 0x80, 0x68, 0xBE, 0xE8,
+    0x2E, 0x00, 0xD0, 0xD1, 0x02, 0x9E, 0x7E, 0x57,
+    0x6E, 0xEC, 0x5D, 0x2D, 0x29, 0x80, 0x6F, 0xAB,
+    0x93, 0xB8, 0xE6, 0x36, 0xCF, 0xEB, 0x31, 0xAE
+
+```
+
+生成C1的算法如下：
+```
+calc_c1_digest(c1, schema) {
+    get c1s1-joined from c1 by specified schema
+    digest-data = HMACsha256(c1s1-joined, FPKey, 30)
+    return digest-data;
+}
+random fill 1536bytes c1 // also fill the c1-128bytes-key
+time = time() // c1[0-3]
+version = [0x80, 0x00, 0x07, 0x02] // c1[4-7]
+schema = choose schema0 or schema1
+digest-data = calc_c1_digest(c1, schema)
+copy digest-data to c1
+```
+
+生成S1的算法如下：
+```
+
+/*decode c1 try schema0 then schema1*/
+c1-digest-data = get-c1-digest-data(schema0)
+if c1-digest-data equals to calc_c1_digest(c1, schema0) {
+    c1-key-data = get-c1-key-data(schema0)
+    schema = schema0
+} else {
+    c1-digest-data = get-c1-digest-data(schema1)
+    if c1-digest-data not equals to calc_c1_digest(c1, schema1) {
+        switch to simple handshake.
+        return
+    }
+    c1-key-data = get-c1-key-data(schema1)
+    schema = schema1
+}
  
+/*generate s1*/
+random fill 1536bytes s1
+time = time() // c1[0-3]
+version = [0x04, 0x05, 0x00, 0x01] // s1[4-7]
+s1-key-data=shared_key=DH_compute_key(peer_pub_key=c1-key-data)
+get c1s1-joined by specified schema
+s1-digest-data = HMACsha256(c1s1-joined, FMSKey, 36)
+copy s1-digest-data and s1-key-data to s1.
+```
+
+### complex handshake C2S2 算法
+
+C2S2的生成算法如下：
+
+```
+random fill c2s2 1536 bytes
+
+// client generate C2, or server valid C2
+temp-key = HMACsha256(s1-digest, FPKey, 62)
+c2-digest-data = HMACsha256(c2-random-data, temp-key, 32)
+
+// server generate S2, or client valid S2
+temp-key = HMACsha256(c1-digest, FMSKey, 68)
+s2-digest-data = HMACsha256(s2-random-data, temp-key, 32)
+```
+
+验证的算法是一样的。
 
 ### **3**.  RTMP 消息
 
