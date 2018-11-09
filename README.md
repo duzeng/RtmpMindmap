@@ -4,17 +4,15 @@
 
 RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它是由Adobe公司提出的一种应用层的协议，用来解决多媒体数据传输流的多路复用（Multiplexing）和分包（packetizing）的问题。随着VR技术的发展，视频直播等领域逐渐活跃起来，RTMP作为业内广泛使用的协议也重新被相关开发者重视起来。本文主要分享对RTMP的一些简介和实际开发中遇到的一些状况。
 
-**RTMP协议基本特点：**
+### **RTMP协议基本特点：**
 
 • 基于TCP协议的应用层协议
 
 • 默认通信端口1935
 
-**直播基本流程：**
+### **直播基本流程：**
 
-![img](images/pic_1.png) 
-
- 
+![img](images/pic_1.png)
 
 可以看到RTMP 工作在直播推流和拉流两个位置，主要用作音视频媒体数据的传输，推流主要通过RTMP协议，而拉流还可以通过HLS和Http-FLV两种方式。
 
@@ -34,8 +32,6 @@ RTMP 握手分为简单握手和复杂握手，现在Adobe公司使用RTMP协议
  C0 and S0 bits
 ```
 
-
-
 C0和S0：1个字节，包含了RTMP版本, 当前RTMP协议的版本为 3 
 
 ```c++
@@ -54,8 +50,6 @@ C0和S0：1个字节，包含了RTMP版本, 当前RTMP协议的版本为 3
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
                         C1 and S1 bits
 ```
-
-
 
 C1和S1：4字节时间戳，4字节的0，1528字节的随机数
 
@@ -77,13 +71,9 @@ C1和S1：4字节时间戳，4字节的0，1528字节的随机数
                             C2 and S2 bits
 ```
 
- 
-
 C2和S2：4字节时间戳，4字节从对端读到的时间戳，1528字节随机数
 
- 
-
-### **RTMP握手基本过程：** 
+### **RTMP握手基本过程：**
 
 ```
 +-------------+                            +-------------+
@@ -118,8 +108,6 @@ Handshake Done              |               Handshake Done
           Pictorial Representation of Handshake
 ```
 
-
-
 握手开始于客户端发送C0、C1块。服务器收到C0或C1后发送S0和S1。
 
 当客户端收齐S0和S1后，开始发送C2。当服务器收齐C0和C1后，开始发送S2。
@@ -133,13 +121,13 @@ RTMP握手的这个过程就是完成了两件事：
 校验客户端和服务器端RTMP协议版本号
 
 是发了一堆随机数据，校验网络状况。
- 
+
 ## 2.2 *复杂握手*
 
 ### **complex handshake C1S1结构**
 
 complex handshake将C1S1分为4个部分，它们的顺序(schema)一种可能是：
- 
+
 ```
 // c1s1 schema0
 time: 4bytes
@@ -218,7 +206,7 @@ digest-data: 32bytes
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-### *complex handshake C1S1算法*
+### **complex handshake C1S1算法**
 
 C1S1中都是包含32字节的digest，而且digest将C1S1分成两部分：
 
@@ -228,7 +216,7 @@ c1s1-part1: n bytes
 digest-data: 32bytes
 c1s1-part2: (1536-n-32)bytes
 
-//C1 S1 digest 
+//C1 S1 digest
                 1536 bytes
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  |    P1    |    digest data   |    P2     |
@@ -352,8 +340,6 @@ RTMP消息格式：
                          Message Header
 ```
 
-
-
 • 1字节消息类型
 
 • 3字节负载消息长度
@@ -379,8 +365,6 @@ RTMP消息格式：
                             Chunk Format
 ```
 
-
-
 RTMP消息块构成：
 
 • Basic Header
@@ -403,8 +387,6 @@ Chunk Basic header格式有3种:
  Chunk basic header 1
 ```
 
-
-
 格式2：
 
 ```
@@ -416,8 +398,6 @@ Chunk Basic header格式有3种:
       Chunk basic header 2
 ```
 
-
-
 格式3：
 
 ```
@@ -427,8 +407,6 @@ Chunk Basic header格式有3种:
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
              Chunk basic header 3
 ```
-
-
 
 注意事项：
 
@@ -485,12 +463,12 @@ Message Header占用7个字节，省去了表示msg stream id的4个字节，表
 格式2：
 
 ```
-  0                1                   2     
-  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+  0                1                   2
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  |                          timestamp            |  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-          Chunk Message Header - Type 2 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+          Chunk Message Header - Type 2
 ```
 
 Message Header占用3个字节，相对于格式1，又省去了表示消息长度的3个字节和表示消息类型的1个字节，表示此chunk和上一次发送的chunk所在的流、消息的长度和消息的类型都相同。余下的这三个字节表示timestamp delta，使用同格式1。
@@ -511,21 +489,19 @@ Message Header占用3个字节，相对于格式1，又省去了表示消息长�
 
 • **Chunk Size**:
 
-RTMP是按照chunk size进行分块，chunk size 指的是 chunk的payload部分的大小，不包括chunk basic header 和 chunk message header长度。客户端和服务器端各自维护了两个chunk size, 分别是自身分块的chunk size 和 对端 的chunk size, 默认的这两个chunk size都是128字节。通过向对端发送set chunk size 消息可以告知对方更改了 chunk size的大小。 
+RTMP是按照chunk size进行分块，chunk size 指的是 chunk的payload部分的大小，不包括chunk basic header 和 chunk message header长度。客户端和服务器端各自维护了两个chunk size, 分别是自身分块的chunk size 和 对端 的chunk size, 默认的这两个chunk size都是128字节。通过向对端发送set chunk size 消息可以告知对方更改了 chunk size的大小。
 
 • **Chunk Type**:
 
-RTMP消息分成的Chunk有4种类型，可以通过 chunk basic header的高两位(fmt)指定，一般在拆包的时候会把一个RTMP消息拆成以格式0开始的chunk，之后的包拆成格式3 类型的chunk，我查看了有不少代码也是这样实现的，这样也是最简单的实现。 
+RTMP消息分成的Chunk有4种类型，可以通过 chunk basic header的高两位(fmt)指定，一般在拆包的时候会把一个RTMP消息拆成以格式0开始的chunk，之后的包拆成格式3 类型的chunk，我查看了有不少代码也是这样实现的，这样也是最简单的实现。
 
-如果第二个message和第一个message的message stream ID 相同，并且第二个message的长度也大于了chunk size，那么该如何拆包？当时查了很多资料，都没有介绍。后来看了一些源码，如 SRS，FFMPEG中的实现，发现第二个message可以拆成Type_1类型一个chunk， message剩余的部分拆成Type_3类型的chunk。FFMPEG中就是这么做的。 
+如果第二个message和第一个message的message stream ID 相同，并且第二个message的长度也大于了chunk size，那么该如何拆包？当时查了很多资料，都没有介绍。后来看了一些源码，如 SRS，FFMPEG中的实现，发现第二个message可以拆成Type_1类型一个chunk， message剩余的部分拆成Type_3类型的chunk。FFMPEG中就是这么做的。
 
 ### 3.2  **RTMP 交互消息**
 
 推流RTMP消息交互流程：
 
-![img](images/pic_2.png) 
-
- 
+![img](images/pic_2.png)
 
 关于推流的过程，RTMP的协议文档上给了上图示例，说一下推流注意事项：
 
@@ -549,21 +525,19 @@ RTMP 命令消息格式：
  +----------------+---------+---------------------------------------+
 ```
 
-
-
 RTMP握手之后先发送一个connect 命令消息，命令里面包含什么东西，协议中没有具体规定，实际通信中要指定一些编解码的信息，并以AMF格式发送, 下面是用wireshake抓取connect命令需要包含的参数信息：
 
-![img](images/pic_3.png) 
+![img](images/pic_3.png)
 
-这些信息协议中并没有特别详细说明, 在librtmp，srs-librtmp这些源码中，以及用wireshark 抓包的时候可以看到。 
+这些信息协议中并没有特别详细说明, 在librtmp，srs-librtmp这些源码中，以及用wireshark 抓包的时候可以看到。
 
-服务器返回的是一个_result命令类型消息，这个消息的payload length一般不会大于128字节，但是在最新的nginx-rtmp中返回的消息长度会大于128字节。 
+服务器返回的是一个_result命令类型消息，这个消息的payload length一般不会大于128字节，但是在最新的nginx-rtmp中返回的消息长度会大于128字节。
 
 消息的transactionID是用来标识command类型的消息的，服务器返回的_result消息可以通过 transactionID来区分是对哪个命令的回应，connect 命令发完之后还要发送其他命令消息，要保证他们的transactionID不相同。
 
 发送完connect命令之后一般会发一个 set chunk size消息来设置chunk size 的大小，也可以不发。
 
-Window Acknowledgement Size 是设置接收端消息窗口大小，一般是2500000字节，即告诉对端在收到设置的窗口大小长度的数据之后要返回一个ACK消息。在实际做推流的时候推流端要接收很少的服务器数据，远远到达不了窗口大小，所以这个消息可以不发。而对于服务器返回的ACK消息一般也不做处理，默认服务器都已经收到了所有消息了。 
+Window Acknowledgement Size 是设置接收端消息窗口大小，一般是2500000字节，即告诉对端在收到设置的窗口大小长度的数据之后要返回一个ACK消息。在实际做推流的时候推流端要接收很少的服务器数据，远远到达不了窗口大小，所以这个消息可以不发。而对于服务器返回的ACK消息一般也不做处理，默认服务器都已经收到了所有消息了。
 
 之后要等待服务器对于connect消息的回应的，一般是把服务器返回的chunk都读完，组包成完整的RTMP消息，没有错误就可以进行下一步了。
 
@@ -573,7 +547,7 @@ Window Acknowledgement Size 是设置接收端消息窗口大小，一般是2500
 
 当发送完createStream消息之后，解析服务器返回的消息会得到一个stream ID。
 
-![img](images/pic_4.png) 
+![img](images/pic_4.png)
 
 这个ID也就是以后和服务器通信的 message stream ID, 一般返回的是1，不固定。
 
@@ -597,14 +571,11 @@ RTMP 的Chunk Steam ID是用来区分某一个chunk是属于哪一个message的 
 
 RTMP协议是个比较啰嗦的协议，实现起来也比较复杂，但通信过程过程相对简单。在直播的实际工程应用中，协议上很多地方都没有详细说明，注意了以上提到几点，基本能够保证RTMP音视频的通信正常。以上就是对RTMP协议的简介和一些注意事项，希望能帮到有需要的朋友，另外本文难免有错误或说的不够详细的地方，欢迎指正，一起交流探讨。
 
-
-
 -----
 
 附：RTMP 协议整理成脑图，比较清晰，包括rtmp 消息类型，rtmp 分块chunking，rtmp分块例子。
 免费脑图工具 [Xmind](http://www.xmindchina.net/) 格式.
 
-![](images/chunking.png)
-![](images/rtmp_chunking_demo.png)
-![](images/message.png)
-
+![RTMP消息分块](./images/chunking.png)
+![消息分开实例](./images/rtmp_chunking_demo.png)
+![RTMP消息类型](./images/message.png)
