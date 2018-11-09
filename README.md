@@ -1,6 +1,6 @@
-## **直播RTMP协议详解与注意事项**
+# **直播RTMP协议详解与注意事项**
 
-### **1.** **简介**
+## **1.** **简介**
 
 RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它是由Adobe公司提出的一种应用层的协议，用来解决多媒体数据传输流的多路复用（Multiplexing）和分包（packetizing）的问题。随着VR技术的发展，视频直播等领域逐渐活跃起来，RTMP作为业内广泛使用的协议也重新被相关开发者重视起来。本文主要分享对RTMP的一些简介和实际开发中遇到的一些状况。
 
@@ -18,11 +18,11 @@ RTMP协议是Real Time Message Protocol(实时信息传输协议)的缩写，它
 
 可以看到RTMP 工作在直播推流和拉流两个位置，主要用作音视频媒体数据的传输，推流主要通过RTMP协议，而拉流还可以通过HLS和Http-FLV两种方式。
 
-### 2. **RTMP 握手**
+## 2. **RTMP 握手**
 
 RTMP 握手分为简单握手和复杂握手，现在Adobe公司使用RTMP协议的产品用复杂握手的较多，不做介绍。
 
-* 简单握手
+## 2.1 *简单握手*
 
 ### **握手包格式：**
 
@@ -133,19 +133,20 @@ RTMP握手的这个过程就是完成了两件事：
 校验客户端和服务器端RTMP协议版本号
 
 是发了一堆随机数据，校验网络状况。
+ 
+## 2.2 *复杂握手*
 
-* 复杂握手
-
-### complex handshake C1S1结构
+### **complex handshake C1S1结构**
 
 complex handshake将C1S1分为4个部分，它们的顺序(schema)一种可能是：
-
+ 
 ```
 // c1s1 schema0
 time: 4bytes
 version: 4bytes
 key: 764bytes
 digest: 764bytes
+
 ```
 
 其中，key和digest可能会交换位置，即schema可能是：
@@ -202,7 +203,7 @@ random-data: (764-4-offset-32)bytes
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-### complex handshake C2S2结构
+### **complex handshake C2S2结构**
 
 C2S2主要是提供对C1S1的验证。结构如下：
 
@@ -217,7 +218,7 @@ digest-data: 32bytes
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-### complex handshake C1S1算法
+### *complex handshake C1S1算法*
 
 C1S1中都是包含32字节的digest，而且digest将C1S1分成两部分：
 
@@ -313,7 +314,7 @@ s1-digest-data = HMACsha256(c1s1-joined, FMSKey, 36)
 copy s1-digest-data and s1-key-data to s1.
 ```
 
-### complex handshake C2S2 算法
+#### complex handshake C2S2 算法
 
 C2S2的生成算法如下：
 
@@ -331,7 +332,7 @@ s2-digest-data = HMACsha256(s2-random-data, temp-key, 32)
 
 验证的算法是一样的。
 
-### **3**.  RTMP 消息
+## **3**.  RTMP 消息
 
 RTMP消息格式：
 
